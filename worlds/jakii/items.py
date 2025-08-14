@@ -1,0 +1,78 @@
+from BaseClasses import Item
+from .game_id import jak2_name
+
+
+class Jak2Item(Item):
+    game: str = jak2_name
+
+key_item_table = {
+    1: "Scatter Gun",
+    2: "Blaster",
+    3: "Vulcan Fury",
+    4: "Peacemaker",
+    5: "Morph Gun Ammo Upgrade",
+    6: "Morph Gun Fire Rate Upgrade",
+    7: "Morph Gun Damage Upgrade",
+    8: "JET-Board",
+    9: "Dark Jak",
+    10: "Dark Bomb",
+    11: "Dark Blast",
+    12: "Dark Giant",
+    13: "Dark Invincibility",
+    14: "Red Security Pass",
+    15: "Yellow Security Pass",
+    16: "Green Security Pass",
+    17: "Purple Security Pass",
+    18: "Black Security Pass",
+    19: "Air Train Pass",
+    20: "Lens",
+    21: "Gear",
+    22: "Shard",
+    23: "Ruby Key",
+    24: "Heart of Mar",
+    25: "Time Map",
+    26: "Precursor Stone",
+    27: "Life Seed",
+    28: "Titan Suit",
+    29: "Gunpod",
+    30: "Seal Piece #1",
+    31: "Seal Piece #2",
+    32: "Seal Piece #3",
+    33: "Rift Rider"
+}
+
+symbol_lookup = {
+    1: "gun-red",
+    2: "gun-yellow",
+    3: "gun-blue",
+    4: "gun-dark",
+    5: "gun-upgrade-ammo",
+    6: "gun-upgrade-speed",
+    7: "gun-upgrade-damage",
+    8: "board",
+    9: "darkjak",
+    10: "darkjak-bomb0",
+    11: "darkjak-bomb1",
+    12: "darkjak-giant",
+    13: "darkjak-invinc",
+    14: "pass-red",
+    15: "pass-yellow",
+    16: "pass-green",
+    17: "pass-purple",
+    18: "pass-black",
+    19: "pass-air-train",
+    20: "lens",
+    21: "gear",
+    22: "shard",
+    23: "ruby-key",
+    24: "heart-of-mar",
+    25: "time-map",
+    26: "precursor-stone",
+    27: "life-seed",
+    28: "titan-suit",
+    29: "gun-turret",
+    30: "seal-piece-1",
+    31: "seal-piece-2",
+    32: "seal-piece-3",
+    33: "rift-rider"
+}
