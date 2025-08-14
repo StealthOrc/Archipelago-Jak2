@@ -99,10 +99,10 @@ side_mission_table = {
     25: "Erol Race Side Mission",
     26: "Port Race Side Mission",
     27: "JET-Board Stadium Challenge Side Mission",
-    28: "Class 3 Race Side Mission",
-    29: "Class 2 Race Side Mission",
-    30: "Class 1 Race Side Mission",
-    31: "Class 3R Race Side Mission",
-    32: "Class 2R Race Side Mission",
-    33: "Class 1R Race Side Mission"
+    28: "Class 3 Race Side Mission (Computer by Stadium)",
+    29: "Class 2 Race Side Mission (Computer by Stadium)",
+    30: "Class 1 Race Side Mission (Computer by Stadium)",
+    31: "Class 3R Race Side Mission (Computer by Stadium)",
+    32: "Class 2R Race Side Mission (Computer by Stadium)",
+    33: "Class 1R Race Side Mission (Computer by Stadium)"
 }
