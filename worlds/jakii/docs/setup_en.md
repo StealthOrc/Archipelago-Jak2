@@ -1,3 +1,3 @@
-#Jak II (ArchipelaGOAL II) Setup Guide
+# Jak II (ArchipelaGOAL II) Setup Guide
 
-#Currently a Work in Progress, stay tuned!
+## Currently a Work in Progress, stay tuned!
