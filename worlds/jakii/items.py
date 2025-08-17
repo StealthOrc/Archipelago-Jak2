@@ -1,7 +1,6 @@
 from BaseClasses import Item
 from .game_id import jak2_name
 
-
 class Jak2Item(Item):
     game: str = jak2_name
 
