@@ -4,7 +4,7 @@ from BaseClasses import (Tutorial, Item, ItemClassification as ItemClass)
 
 # Jak 2 imports
 from .game_id import jak2_name
-from .items import (key_item_table, symbol_lookup, Jak2Item)
+from .items import (key_item_table, Jak2ItemData)
 from .locations import (JakIILocation, all_locations_table)
 
 class JakIIWebWorld(WebWorld):
@@ -57,7 +57,7 @@ class JakIIWorld(World):
 
             data = self.item_data_helper(item_id)
             for (count, classification, num) in data:
-                self.multiworld.itempool += [Jak2Item(item_name, classification, item_id, self.player)
+                self.multiworld.itempool += [Jak2ItemData(item_name, classification, item_id, self.player)
                                              for _ in range(count)]
                 items_made += count
         total_locations = len(key_item_table)
@@ -68,7 +68,7 @@ class JakIIWorld(World):
         item_id = self.item_name_to_id[name]
 
         _, classification, _ = self.item_data_helper(item_id)[0]
-        return Jak2Item(name, classification, item_id, self.player)
+        return Jak2ItemData(name, classification, item_id, self.player)
 
     def get_filler_item_name(self) -> str:
         return "Dark Eco Pill"

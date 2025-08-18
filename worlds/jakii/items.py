@@ -1,77 +1,51 @@
-from BaseClasses import Item
-from .game_id import jak2_name
-
-class Jak2Item(Item):
-    game: str = jak2_name
+class Jak2ItemData:
+    id: int
+    name: str
+    symbol: str
+    
+    def __init__(self, id: int, name: str, symbol: str) -> None:
+        self.id = id
+        self.name = name
+        self.symbol = symbol
 
 key_item_table = {
-    1: "Scatter Gun",
-    2: "Blaster",
-    3: "Vulcan Fury",
-    4: "Peacemaker",
-    5: "Morph Gun Ammo Upgrade",
-    6: "Morph Gun Fire Rate Upgrade",
-    7: "Morph Gun Damage Upgrade",
-    8: "JET-Board",
-    9: "Dark Jak",
-    10: "Dark Bomb",
-    11: "Dark Blast",
-    12: "Dark Giant",
-    13: "Dark Invincibility",
-    14: "Red Security Pass",
-    15: "Yellow Security Pass",
-    16: "Green Security Pass",
-    17: "Purple Security Pass",
-    18: "Black Security Pass",
-    19: "Air Train Pass",
-    20: "Lens",
-    21: "Gear",
-    22: "Shard",
-    23: "Ruby Key",
-    24: "Heart of Mar",
-    25: "Time Map",
-    26: "Precursor Stone",
-    27: "Life Seed",
-    28: "Titan Suit",
-    29: "Gunpod",
-    30: "Seal Piece #1",
-    31: "Seal Piece #2",
-    32: "Seal Piece #3",
-    33: "Rift Rider"
-}
-
-symbol_lookup = {
-    1: "gun-red",
-    2: "gun-yellow",
-    3: "gun-blue",
-    4: "gun-dark",
-    5: "gun-upgrade-ammo",
-    6: "gun-upgrade-speed",
-    7: "gun-upgrade-damage",
-    8: "board",
-    9: "darkjak",
-    10: "darkjak-bomb0",
-    11: "darkjak-bomb1",
-    12: "darkjak-giant",
-    13: "darkjak-invinc",
-    14: "pass-red",
-    15: "pass-yellow",
-    16: "pass-green",
-    17: "pass-purple",
-    18: "pass-black",
-    19: "pass-air-train",
-    20: "lens",
-    21: "gear",
-    22: "shard",
-    23: "ruby-key",
-    24: "heart-of-mar",
-    25: "time-map",
-    26: "precursor-stone",
-    27: "life-seed",
-    28: "titan-suit",
-    29: "gun-turret",
-    30: "seal-piece-1",
-    31: "seal-piece-2",
-    32: "seal-piece-3",
-    33: "rift-rider"
+    # morph gun shit
+    1: Jak2ItemData(id=1, name="Scatter Gun", symbol="gun-red"),
+    2: Jak2ItemData(id=2, name="Blaster", symbol="gun-yellow"),
+    3: Jak2ItemData(id=3, name="Vulcan Fury", symbol="gun-blue"),
+    4: Jak2ItemData(id=4, name="Peacemaker", symbol="gun-dark"),
+    5: Jak2ItemData(id=5, name="Morph Gun Ammo Upgrade", symbol="gun-upgrade-ammo"),
+    6: Jak2ItemData(id=6, name="Morph Gun Fire Rate Upgrade", symbol="gun-upgrade-speed"),
+    7: Jak2ItemData(id=7, name="Morph Gun Damage Upgrade", symbol="gun-upgrade-damage"),
+    # jet-board
+    8: Jak2ItemData(id=8, name="JET-Board", symbol="board"),
+    # dark jak shit
+    9: Jak2ItemData(id=9, name="Dark Jak", symbol="darkjak"),
+    10: Jak2ItemData(id=10, name="Dark Bomb", symbol="darkjak-bomb0"),
+    11: Jak2ItemData(id=11, name="Dark Blast", symbol="darkjak-bomb1"),
+    12: Jak2ItemData(id=12, name="Dark Giant", symbol="darkjak-giant"),
+    13: Jak2ItemData(id=13, name="Dark Invincibility", symbol="darkjak-invinc"),
+    # security pass shit
+    14: Jak2ItemData(id=14, name="Red Security Pass", symbol="pass-red"),
+    15: Jak2ItemData(id=15, name="Yellow Security Pass", symbol="pass-yellow"),
+    16: Jak2ItemData(id=16, name="Green Security Pass", symbol="pass-green"),
+    17: Jak2ItemData(id=17, name="Purple Security Pass", symbol="pass-purple"),
+    18: Jak2ItemData(id=18, name="Black Security Pass", symbol="pass-black"),
+    19: Jak2ItemData(id=19, name="Air Train Pass", symbol="pass-air-train"),
+    # mountain temple shit
+    20: Jak2ItemData(id=20, name="Lens", symbol="lens"),
+    21: Jak2ItemData(id=21, name="Gear", symbol="gear"),
+    22: Jak2ItemData(id=22, name="Shard", symbol="shard"),
+    # misc but important shit
+    23: Jak2ItemData(id=23, name="Ruby Key", symbol="ruby-key"),
+    24: Jak2ItemData(id=24, name="Heart of Mar", symbol="heart-of-mar"),
+    25: Jak2ItemData(id=25, name="Time Map", symbol="time-map"),
+    26: Jak2ItemData(id=26, name="Precursor Stone", symbol="precursor-stone"),
+    27: Jak2ItemData(id=27, name="Life Seed", symbol="life-seed"),
+    28: Jak2ItemData(id=28, name="Titan Suit", symbol="titan-suit"),
+    29: Jak2ItemData(id=29, name="Gunpod", symbol="gun-turret"),
+    30: Jak2ItemData(id=30, name="Seal Piece #1", symbol="seal-piece-1"),
+    31: Jak2ItemData(id=31, name="Seal Piece #2", symbol="seal-piece-2"),
+    32: Jak2ItemData(id=32, name="Seal Piece #3", symbol="seal-piece-3"),
+    33: Jak2ItemData(id=33, name="Rift Rider", symbol="rift-rider")
 }
