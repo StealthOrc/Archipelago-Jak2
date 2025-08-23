@@ -1,11 +1,16 @@
-#Archipelago Imports
+# Archipelago Imports
 from worlds.AutoWorld import World, WebWorld
-from BaseClasses import (Tutorial, Item, ItemClassification as ItemClass)
+from BaseClasses import (Tutorial, ItemClassification as ItemClass)
+from typing import cast
 
 # Jak 2 imports
 from .game_id import jak2_name
-from .items import (key_item_table, Jak2ItemData)
+from .items import (key_item_table, Jak2ItemData, Jak2Item)
+from .locs import (mission_locations)
 from .locations import (JakIILocation, all_locations_table)
+from .locs.mission_locations import Jak2MissionData
+from .regs.region_base import JakIIRegion
+
 
 class JakIIWebWorld(WebWorld):
     setup_en = Tutorial(
@@ -19,6 +24,10 @@ class JakIIWebWorld(WebWorld):
 
     tutorials = [setup_en]
     bug_report_page = "https://github.com/narramoment/Archipelago/issues"
+
+
+
+
 
 class JakIIWorld(World):
     """
@@ -34,20 +43,23 @@ class JakIIWorld(World):
 
     game = jak2_name
 
-    web = JakIIWebWorld
+    web = JakIIWebWorld()
 
-    item_name_to_id = {name: k for k, name in key_item_table.items()}
-    location_name_to_id = {name: k for k, name in all_locations_table.items()}
+    item_name_to_id = {data.name: k for k, data in key_item_table.items()}
+    location_name_to_id = {data.name: k for k, data in all_locations_table.items()}
     item_name_groups = {}
     location_name_groups = {}
+    origin_region_name = "Mission Tree"
 
-    def item_data_helper(self, item: int) -> list[tuple[int, ItemClass, int]]:
+    @staticmethod
+    def item_data_helper(item: int) -> list[tuple[int, ItemClass, int]]:
         data: list[tuple[int, ItemClass, int]] = []
 
-        if item in range(key_item_table, key_item_table):
-            data.append((1, ItemClass.progression | ItemClass.useful, 0))
-        else:
-            raise KeyError(f"Tried to fill pool with unknown ID {item}")
+        # if item in range(key_item_table, key_item_table):
+        #     data.append((1, ItemClass.progression | ItemClass.useful, 0))
+        # else:
+        #     raise KeyError(f"Tried to fill pool with unknown ID {item}")
+        data.append((1, ItemClass.progression | ItemClass.useful, 0))
         return data
 
     def create_items(self) -> None:
@@ -57,18 +69,30 @@ class JakIIWorld(World):
 
             data = self.item_data_helper(item_id)
             for (count, classification, num) in data:
-                self.multiworld.itempool += [Jak2ItemData(item_name, classification, item_id, self.player)
+                self.multiworld.itempool += [Jak2Item(item_name, classification, item_id, self.player)
                                              for _ in range(count)]
                 items_made += count
-        total_locations = len(key_item_table)
+
+        all_regions = self.multiworld.get_regions(self.player)
+        total_locations = sum(reg.location_count for reg in cast(list[JakIIRegion], all_regions))
         total_filler = total_locations - items_made
         self.multiworld.itempool += [self.create_filler() for _ in range(total_filler)]
 
-    def create_item(self, name: str) -> Item:
+    def create_item(self, name: str) -> Jak2Item:
         item_id = self.item_name_to_id[name]
 
         _, classification, _ = self.item_data_helper(item_id)[0]
-        return Jak2ItemData(name, classification, item_id, self.player)
+        return Jak2Item(name, classification, item_id, self.player)
 
     def get_filler_item_name(self) -> str:
         return "Dark Eco Pill"
+
+    def create_regions(self) -> None:
+        mission_tree_region = JakIIRegion("Mission Tree", self.player, self.multiworld)
+
+        for mission_id in all_locations_table:
+            mission = all_locations_table[mission_id]
+
+            mission_tree_region.add_jak_mission(mission.mission_id, mission.name, mission.rule)
+
+        self.multiworld.regions.append(mission_tree_region)

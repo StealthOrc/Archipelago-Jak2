@@ -1,3 +1,9 @@
+from BaseClasses import Item
+from worlds.jakii import jak2_name
+
+class Jak2Item(Item):
+    game: str = jak2_name
+
 class Jak2ItemData:
     id: int
     name: str

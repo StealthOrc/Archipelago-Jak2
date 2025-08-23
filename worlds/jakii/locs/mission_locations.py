@@ -43,7 +43,7 @@ main_mission_table = {
     # Act 1
     1: Jak2MissionData(mission_id=1, name="Escape From Prison"),
     2: Jak2MissionData(mission_id=2, name="Protect Kor and Kid", rule=lambda state, player:
-    (state.has("Dark Jak"), player)),
+    (state.has("Dark Jak", player))),
     3: Jak2MissionData(mission_id=3, name="Retrieve Banner from Dead Town"),
     4: Jak2MissionData(mission_id=4, name="Find Pumping Station Valve"),
     5: Jak2MissionData(mission_id=5, name="Blow up Ammo at Fortress"),
@@ -140,13 +140,13 @@ main_mission_table = {
     40: Jak2MissionData(mission_id=40, name="Use items in No Man's Canyon", rule=lambda state, player:
                         slums_to_market(state, player)
                         and state.has("JET-Board", player)
-                        and state.has_all("Seal Piece #1", "Seal Piece #2", "Seal Piece #3")),
+                        and state.has_all(("Seal Piece #1", "Seal Piece #2", "Seal Piece #3"), player)),
     41: Jak2MissionData(mission_id=41, name="Pass the first Test of Manhood", rule=lambda state, player:
                         slums_to_market(state, player)
-                        and state.has_all("Lens", "Gear", "Shard")),
+                        and state.has_all(("Lens", "Gear", "Shard"), player)),
     42: Jak2MissionData(mission_id=42, name="Pass the second Test of Manhood", rule=lambda state, player:
                         slums_to_market(state, player)
-                        and state.has_all("Lens", "Gear", "Shard")),
+                        and state.has_all(("Lens", "Gear", "Shard"), player)),
     43: Jak2MissionData(mission_id=43, name="Defeat Baron in Mar's Tomb", rule=lambda state, player:
                         slums_to_market(state, player)
                         and any_gun(state, player)),
@@ -161,7 +161,7 @@ main_mission_table = {
     46: Jak2MissionData(mission_id=46, name="Win Class 2 Race at Stadium", rule=lambda state, player:
                         slums_to_stadium(state, player)),
     47: Jak2MissionData(mission_id=47, name="Protect Hideout from Bombots", rule=lambda state, player:
-                        state.has_all("Red Security Pass", "Vulcan Fury")),
+                        state.has_all(("Red Security Pass", "Vulcan Fury"), player)),
     48: Jak2MissionData(mission_id=48, name="Beat Erol in Race Challenge", rule=lambda state, player:
                         slums_to_port(state, player)
                         and state.has("Yellow Security Pass", player)),
@@ -178,7 +178,7 @@ main_mission_table = {
     52: Jak2MissionData(mission_id=52, name="Destroy Drill Platform Tower", rule=lambda state, player:
                         slums_to_port(state, player)
                         and (state.has("Titan Suit", player)
-                             and state.has_any("Blaster", "Vulcan Fury"))),
+                             and state.has_any(("Blaster", "Vulcan Fury"), player))),
     53: Jak2MissionData(mission_id=53, name="Rescue Lurkers for Brutter #2", rule=lambda state, player:
                         slums_to_market(state, player)
                         and (state.has("Yellow Security Pass", player))
@@ -201,28 +201,28 @@ main_mission_table = {
                         slums_to_port(state, player)),
     59: Jak2MissionData(mission_id=59, name="Find Sig in Under Port", rule=lambda state, player:
                         slums_to_port(state, player)
-                        and state.has_all("Ruby Key", "Titan Suit")),
+                        and state.has_all(("Ruby Key", "Titan Suit"), player)),
     60: Jak2MissionData(mission_id=60, name="Escort Sig in Under Port", rule=lambda state, player:
                         slums_to_port(state, player)
-                        and state.has_all("Ruby Key", "Titan Suit")
+                        and state.has_all(("Ruby Key", "Titan Suit"), player)
                         and any_gun(state, player)),
     61: Jak2MissionData(mission_id=61, name="Defend Stadium", rule=lambda state, player:
                         slums_to_stadium(state, player)
-                        and state.has_all("Heart of Mar", "Time Map", "Rift Rider")
+                        and state.has_all(("Heart of Mar", "Time Map", "Rift Rider"), player)
                         and any_gun(state, player)),
     62: Jak2MissionData(mission_id=62, name="Check the Construction Site", rule=lambda state, player:
                         slums_to_port(state, player)),
     63: Jak2MissionData(mission_id=63, name="Break Barrier at Nest", rule=lambda state, player:
                         slums_to_nest(state, player)
-                        and state.has("Precursor Stone")
+                        and state.has("Precursor Stone", player)
                         and any_gun(state, player)),
     64: Jak2MissionData(mission_id=64, name="Attack the Metal Head Nest", rule=lambda state, player:
                         slums_to_nest(state, player)
-                        and state.has("Precursor Stone")
+                        and state.has("Precursor Stone", player)
                         and any_gun(state, player)),
     65: Jak2MissionData(mission_id=65, name="Destroy Metal Kor at Nest", rule=lambda state, player:
                         slums_to_nest(state, player)
-                        and state.has("Precursor Stone")
+                        and state.has("Precursor Stone", player)
                         and any_gun(state, player))
 }
 
@@ -250,7 +250,7 @@ side_mission_table = {
     11: Jak2SideMissionData(mission_id=11, name="Orb Search 11 (Computer #15)", rule=lambda state, player:
                             slums_to_stadium(state, player)),
     12: Jak2SideMissionData(mission_id=12, name="Orb Search 12 (Computer #7)", rule=lambda state, player:
-                            state.has_all("Red Security Pass", "Yellow Security Pass")
+                            state.has_all(("Red Security Pass", "Yellow Security Pass"), player)
                             or slums_to_market(state, player)),
     13: Jak2SideMissionData(mission_id=13, name="Orb Search 13 (Computer #16)", rule=lambda state, player:
                             state.has("Green Security Pass", player)),
@@ -275,7 +275,8 @@ side_mission_table = {
     # Missions Turned Side Missions
     22: Jak2SideMissionData(mission_id=22, name="Deliver Package Side Mission (Computer #7)"),
     23: Jak2SideMissionData(mission_id=23, name="Shuttle Underground Fighters Side Mission (Computer #7)",
-                            rule=lambda state, player: state.has_all("Red Security Pass", "Yellow Security Pass")),
+                            rule=lambda state, player:
+                            state.has_all(("Red Security Pass", "Yellow Security Pass"), player)),
     24: Jak2SideMissionData(mission_id=24, name="Destroy Blast Bots Side Mission (Computer #7)",
                             rule=lambda state, player: slums_to_market(state, player)
                                                        or state.has("Yellow Security Pass", player)),

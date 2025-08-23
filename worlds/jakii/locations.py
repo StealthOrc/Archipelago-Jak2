@@ -6,6 +6,6 @@ class JakIILocation(Location):
     game: str = jak2_name
 
 all_locations_table = {
-    **{k: v for k, v in missions.main_mission_table},
-    **{(k + 100): v for k, v in missions.side_mission_table}
+    **{k: v for k, v in missions.main_mission_table.items()},
+    **{(k + 100): v for k, v in missions.side_mission_table.items()}
 }
