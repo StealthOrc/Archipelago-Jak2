@@ -53,5 +53,6 @@ key_item_table = {
     30: Jak2ItemData(item_id=30, name="Seal Piece #1", symbol="seal-piece-1"),
     31: Jak2ItemData(item_id=31, name="Seal Piece #2", symbol="seal-piece-2"),
     32: Jak2ItemData(item_id=32, name="Seal Piece #3", symbol="seal-piece-3"),
-    33: Jak2ItemData(item_id=33, name="Rift Rider", symbol="rift-rider")
+    33: Jak2ItemData(item_id=33, name="Rift Rider", symbol="rift-rider"),
+    34: Jak2ItemData(item_id=34, name="Dark Eco Pill", symbol="dark-eco-pill"),
 }

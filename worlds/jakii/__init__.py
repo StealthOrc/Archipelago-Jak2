@@ -71,7 +71,7 @@ class JakIIWorld(World):
             for (count, classification, num) in data:
                 self.multiworld.itempool += [Jak2Item(item_name, classification, item_id, self.player)
                                              for _ in range(count)]
-                items_made += count
+                items_made += 1
 
         all_regions = self.multiworld.get_regions(self.player)
         total_locations = sum(reg.location_count for reg in cast(list[JakIIRegion], all_regions))
