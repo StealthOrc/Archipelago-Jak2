@@ -93,6 +93,6 @@ class JakIIWorld(World):
         for mission_id in all_locations_table:
             mission = all_locations_table[mission_id]
 
-            mission_tree_region.add_jak_mission(mission.mission_id, mission.name, mission.rule)
+            mission_tree_region.add_jak_mission(mission_id, mission.name, mission.rule)
 
         self.multiworld.regions.append(mission_tree_region)
