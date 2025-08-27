@@ -66,12 +66,24 @@ class Jak2ClientCommandProcessor(ClientCommandProcessor):
     def _cmd_memr(self, *arguments: str):
         """Sends a command to the Memory Reader. Arguments:
         - connect : connect the memory reader to the game process (gk).
-        - status : check the internal status of the Memory Reader."""
+        - status : check the internal status of the Memory Reader.
+        - debug : enable debug mode and show comprehensive diagnostics.
+        - debugoff : disable debug mode.
+        - analyze : run comprehensive debug analysis (implies debug mode)."""
         if arguments:
             if arguments[0] == "connect":
                 self.ctx.memr.initiated_connect = True
-            if arguments[0] == "status":
+            elif arguments[0] == "status":
                 create_task_log_exception(self.ctx.memr.print_status())
+            elif arguments[0] == "debug":
+                self.ctx.memr.enable_debug_mode()
+                if self.ctx.memr.connected:
+                    create_task_log_exception(self.ctx.memr.print_debug_info())
+            elif arguments[0] == "debugoff":
+                self.ctx.memr.disable_debug_mode()
+            elif arguments[0] == "analyze":
+                self.ctx.memr.enable_debug_mode()
+                create_task_log_exception(self.ctx.memr.print_debug_info())
 
 
 class Jak2Context(CommonContext):
