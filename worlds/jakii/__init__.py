@@ -1,7 +1,10 @@
 # Archipelago Imports
+import settings
 from worlds.AutoWorld import World, WebWorld
+from worlds.LauncherComponents import components, Component, launch_subprocess, Type, icon_paths
 from BaseClasses import (Tutorial, ItemClassification as ItemClass)
-from typing import cast
+from typing import cast, ClassVar
+import typing
 
 # Jak 2 imports
 from .game_id import jak2_name
@@ -10,6 +13,11 @@ from .locs import (mission_locations)
 from .locations import (JakIILocation, all_locations_table)
 from .locs.mission_locations import Jak2MissionData
 from .regs.region_base import JakIIRegion
+
+
+def launch_client():
+    from . import client
+    launch_subprocess(client.launch, name="Jak2Client")
 
 
 class JakIIWebWorld(WebWorld):
@@ -42,6 +50,8 @@ class JakIIWorld(World):
     """
 
     game = jak2_name
+
+    # Settings will be applied after class definition
 
     web = JakIIWebWorld()
 
@@ -96,3 +106,31 @@ class JakIIWorld(World):
             mission_tree_region.add_jak_mission(mission_id, mission.name, mission.rule)
 
         self.multiworld.regions.append(mission_tree_region)
+
+
+components.append(Component("Jak II Client",
+                            func=launch_client,
+                            component_type=Type.CLIENT,
+                            icon="jak2_icon"))
+
+# TODO: Add proper icon for Jak 2
+icon_paths["jak2_icon"] = f"ap:{__name__}/icons/jak2_icon.png"
+
+
+class Jak2Settings(settings.Group):
+    class RootDirectory(settings.UserFolderPath):
+        """Path to folder containing the ArchipelaGOAL Jak 2 mod executables (gk.exe and goalc.exe).
+        Ensure this path contains forward slashes (/) only. This setting only applies if
+        Auto Detect Root Directory is set to false."""
+        description = "ArchipelaGOAL Jak 2 Root Directory"
+
+    class AutoDetectRootDirectory(settings.Bool):
+        """Attempt to find the OpenGOAL installation and the Jak 2 mod executables (gk.exe and goalc.exe)
+        automatically. If set to true, the ArchipelaGOAL Jak 2 Root Directory setting is ignored."""
+        description = "ArchipelaGOAL Jak 2 Auto Detect Root Directory"
+
+    root_directory: RootDirectory = "C:/Program Files/OpenGOAL/features/jak2/mods/archipelagoal/archipelagoal"
+    auto_detect_root_directory: AutoDetectRootDirectory = True
+
+
+# Settings support can be added later once the basic integration works
