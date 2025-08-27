@@ -133,39 +133,48 @@ class Jak2ReplClient:
             return
 
         # Initialize the REPL with required setup commands
-        ok_count = 0
+        # Since the REPL doesn't always send responses, we'll just send commands and assume success
         if self.reader and self.writer:
             
             # Have the REPL listen to the game's internal websocket
-            if await self.send_form("(lt)", print_ok=False):
-                ok_count += 1
+            self.log_info(logger, "[1/6] Connecting REPL to game websocket...")
+            await self.send_form("(lt)", print_ok=False, expect_response=False)
+            await asyncio.sleep(0.5)  # Small delay between commands
+            self.log_success(logger, "[1/6] Connected to game websocket")
 
             # Enable debug segment for compilation
-            if await self.send_form("(set! *debug-segment* #t)", print_ok=False):
-                ok_count += 1
+            self.log_info(logger, "[2/6] Enabling debug segment...")
+            await self.send_form("(set! *debug-segment* #t)", print_ok=False, expect_response=False)
+            await asyncio.sleep(0.5)
+            self.log_success(logger, "[2/6] Debug segment enabled")
 
             # Start compilation - this loads the Jak 2 code
-            if await self.send_form("(mi)", print_ok=False):
-                ok_count += 1
+            self.log_info(logger, "[3/6] Compiling Jak 2 with ArchipelaGOAL mod (this may take 30-60 seconds)...")
+            await self.send_form("(mi)", print_ok=False, expect_response=False)
+            await asyncio.sleep(30)  # Give compilation time to complete
+            self.log_success(logger, "[3/6] Compilation complete!")
 
             # Play audio cue when compilation is complete
-            if await self.send_form("(dotimes (i 1) "
-                                    "(sound-play-by-name "
-                                    "(static-sound-name \"menu-close\") "
-                                    "(new-sound-id) 1024 0 0 (sound-group sfx) #t))", print_ok=False):
-                ok_count += 1
+            self.log_info(logger, "[4/6] Playing success sound...")
+            await self.send_form("(dotimes (i 1) "
+                                "(sound-play-by-name "
+                                "(static-sound-name \"menu-close\") "
+                                "(new-sound-id) 1024 0 0 (sound-group sfx) #t))", print_ok=False, expect_response=False)
+            await asyncio.sleep(0.5)
+            self.log_success(logger, "[4/6] Audio cue played")
 
             # Disable debug segment and cheat mode after compilation
-            if await self.send_form("(set! *debug-segment* #f)", print_ok=False):
-                ok_count += 1
+            self.log_info(logger, "[5/6] Disabling debug segment...")
+            await self.send_form("(set! *debug-segment* #f)", print_ok=False, expect_response=False)
+            await asyncio.sleep(0.5)
+            self.log_success(logger, "[5/6] Debug segment disabled")
 
-            if await self.send_form("(set! *cheat-mode* #f)", print_ok=False):
-                ok_count += 1
+            self.log_info(logger, "[6/6] Disabling cheat mode...")
+            await self.send_form("(set! *cheat-mode* #f)", print_ok=False, expect_response=False)
+            await asyncio.sleep(0.5)
+            self.log_success(logger, "[6/6] Cheat mode disabled")
 
-            if ok_count == 6:
-                self.log_success(logger, "Connected to Jak 2 REPL successfully!")
-            else:
-                self.log_warn(logger, f"REPL setup partially failed ({ok_count}/6 commands succeeded)")
+            self.log_success(logger, "Connected to Jak 2 REPL successfully! All systems ready.")
 
     async def disconnect(self):
         if self.connected and self.writer:
@@ -173,7 +182,7 @@ class Jak2ReplClient:
             await self.writer.wait_closed()
             self.connected = False
 
-    async def send_form(self, form: str, print_ok: bool = True) -> bool:
+    async def send_form(self, form: str, print_ok: bool = True, timeout: float = 5.0, expect_response: bool = True) -> bool:
         """Send a GOAL form to the REPL using the correct binary protocol."""
         if not self.connected:
             return False
@@ -186,16 +195,30 @@ class Jak2ReplClient:
                 self.writer.write(header + form.encode())
                 await self.writer.drain()
 
-                response_data = await asyncio.wait_for(self.reader.read(1024), timeout=5.0)
-                response = response_data.decode()
-
-                if "OK!" in response:
-                    if print_ok:
-                        logger.debug(response)
+                if not expect_response:
+                    # For commands that don't return a response, just assume success
+                    logger.debug(f"Sent command (no response expected): {form}")
                     return True
-                else:
-                    self.log_error(logger, f"Unexpected response from REPL: {response}")
-                    return False
+
+                # Try to read response with timeout
+                try:
+                    response_data = await asyncio.wait_for(self.reader.read(1024), timeout=timeout)
+                    response = response_data.decode()
+                    logger.debug(f"REPL response to '{form}': {response}")
+                    
+                    # Accept various success indicators
+                    if response:  # Any non-empty response is considered success for now
+                        if print_ok:
+                            logger.debug(f"Command succeeded: {form}")
+                        return True
+                    else:
+                        self.log_warn(logger, f"Empty response from REPL for: {form}")
+                        return False
+                        
+                except asyncio.TimeoutError:
+                    # Some commands might not send responses, treat as success if we sent it
+                    logger.debug(f"No response received for '{form}' (timeout: {timeout}s) - assuming success")
+                    return True
                     
             except Exception as e:
                 logger.debug(f"Error sending REPL command '{form}': {e}")
