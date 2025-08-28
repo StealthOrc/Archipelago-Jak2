@@ -130,51 +130,76 @@ class Jak2ReplClient:
         except Exception as e:
             self.log_error(logger, f"Could not connect to REPL: {e}")
             self.connected = False
+            # Try to set failure status if possible
+            try:
+                await self.send_form("(ap-set-connection-status! (ap-connection-status failure))", print_ok=False, expect_response=False)
+            except:
+                pass  # If we can't even send the failure status, just continue
             return
 
         # Initialize the REPL with required setup commands
         # Since the REPL doesn't always send responses, we'll just send commands and assume success
         if self.reader and self.writer:
-            
-            # Have the REPL listen to the game's internal websocket
-            self.log_info(logger, "[1/6] Connecting REPL to game websocket...")
-            await self.send_form("(lt)", print_ok=False, expect_response=False)
-            await asyncio.sleep(0.5)  # Small delay between commands
-            self.log_success(logger, "[1/6] Connected to game websocket")
+            try:
+                # Have the REPL listen to the game's internal websocket
+                self.log_info(logger, "[1/8] Connecting REPL to game websocket...")
+                await self.send_form("(lt)", print_ok=False, expect_response=False)
+                await asyncio.sleep(0.5)  # Small delay between commands
+                self.log_success(logger, "[1/8] Connected to game websocket")
 
-            # Enable debug segment for compilation
-            self.log_info(logger, "[2/6] Enabling debug segment...")
-            await self.send_form("(set! *debug-segment* #t)", print_ok=False, expect_response=False)
-            await asyncio.sleep(0.5)
-            self.log_success(logger, "[2/6] Debug segment enabled")
+                # Enable debug segment for compilation
+                self.log_info(logger, "[2/8] Enabling debug segment...")
+                await self.send_form("(set! *debug-segment* #t)", print_ok=False, expect_response=False)
+                await asyncio.sleep(0.5)
+                self.log_success(logger, "[2/8] Debug segment enabled")
 
-            # Start compilation - this loads the Jak 2 code
-            self.log_info(logger, "[3/6] Compiling Jak 2 with ArchipelaGOAL mod (this may take 30-60 seconds)...")
-            await self.send_form("(mi)", print_ok=False, expect_response=False)
-            await asyncio.sleep(30)  # Give compilation time to complete
-            self.log_success(logger, "[3/6] Compilation complete!")
+                # Start compilation - this loads the Jak 2 code
+                self.log_info(logger, "[3/8] Compiling Jak 2 with ArchipelaGOAL mod (this may take 30-60 seconds)...")
+                await self.send_form("(mi)", print_ok=False, expect_response=False)
+                await asyncio.sleep(30)  # Give compilation time to complete
+                self.log_success(logger, "[3/8] Compilation complete!")
 
-            # Play audio cue when compilation is complete
-            self.log_info(logger, "[4/6] Playing success sound...")
-            await self.send_form("(dotimes (i 1) "
-                                "(sound-play-by-name "
-                                "(static-sound-name \"menu-close\") "
-                                "(new-sound-id) 1024 0 0 (sound-group sfx) #t))", print_ok=False, expect_response=False)
-            await asyncio.sleep(0.5)
-            self.log_success(logger, "[4/6] Audio cue played")
+                # Set connection status to "wait" - client is connected but syncing
+                self.log_info(logger, "[4/8] Setting connection status to 'wait'...")
+                await self.send_form("(ap-set-connection-status! (ap-connection-status wait))", print_ok=False, expect_response=False)
+                await asyncio.sleep(0.5)
+                self.log_success(logger, "[4/8] Connection status set to 'wait'")
 
-            # Disable debug segment and cheat mode after compilation
-            self.log_info(logger, "[5/6] Disabling debug segment...")
-            await self.send_form("(set! *debug-segment* #f)", print_ok=False, expect_response=False)
-            await asyncio.sleep(0.5)
-            self.log_success(logger, "[5/6] Debug segment disabled")
+                # Play audio cue when compilation is complete
+                self.log_info(logger, "[5/8] Playing success sound...")
+                await self.send_form("(dotimes (i 1) "
+                                    "(sound-play-by-name "
+                                    "(static-sound-name \"menu-close\") "
+                                    "(new-sound-id) 1024 0 0 (sound-group sfx) #t))", print_ok=False, expect_response=False)
+                await asyncio.sleep(0.5)
+                self.log_success(logger, "[5/8] Audio cue played")
 
-            self.log_info(logger, "[6/6] Disabling cheat mode...")
-            await self.send_form("(set! *cheat-mode* #f)", print_ok=False, expect_response=False)
-            await asyncio.sleep(0.5)
-            self.log_success(logger, "[6/6] Cheat mode disabled")
+                # Disable debug segment and cheat mode after compilation
+                self.log_info(logger, "[6/8] Disabling debug segment...")
+                await self.send_form("(set! *debug-segment* #f)", print_ok=False, expect_response=False)
+                await asyncio.sleep(0.5)
+                self.log_success(logger, "[6/8] Debug segment disabled")
 
-            self.log_success(logger, "Connected to Jak 2 REPL successfully! All systems ready.")
+                self.log_info(logger, "[7/8] Disabling cheat mode...")
+                await self.send_form("(set! *cheat-mode* #f)", print_ok=False, expect_response=False)
+                await asyncio.sleep(0.5)
+                self.log_success(logger, "[7/8] Cheat mode disabled")
+
+                # Set connection status to "ready" - everything is ready to go
+                self.log_info(logger, "[8/8] Setting connection status to 'ready'...")
+                await self.send_form("(ap-set-connection-status! (ap-connection-status ready))", print_ok=False, expect_response=False)
+                await asyncio.sleep(0.5)
+                self.log_success(logger, "[8/8] Connection status set to 'ready'")
+
+                self.log_success(logger, "Connected to Jak 2 REPL successfully! All systems ready.")
+            except Exception as e:
+                self.log_error(logger, f"Error during REPL initialization: {e}")
+                # Set failure status if initialization fails
+                try:
+                    await self.send_form("(ap-set-connection-status! (ap-connection-status failure))", print_ok=False, expect_response=False)
+                except:
+                    pass  # If we can't even send the failure status, just continue
+                self.connected = False
 
     async def disconnect(self):
         if self.connected and self.writer:

@@ -31,7 +31,7 @@ sizeof_uint8 = 1
 # *****************************************************************************
 # **** This number must match (-> *ap-info-jak2* version) in ap-struct.gc! ****
 # *****************************************************************************
-expected_memory_version = 1
+expected_memory_version = 2  # Updated to version 2 for connection-status support
 
 
 # Memory structure layout for Jak 2 Archipelago integration
@@ -68,6 +68,9 @@ next_side_mission_index_offset = offsets.define(sizeof_uint64)
 missions_checked_offset = offsets.define(sizeof_uint32, 70)  # 70 main missions  
 side_missions_checked_offset = offsets.define(sizeof_uint32, 24)  # 24 side missions
 
+# Connection status (added in version 2)
+connection_status_offset = offsets.define(sizeof_uint32)  # ap-connection-status enum
+
 # End marker (uint8 array of 4 bytes - "end\0")
 end_marker_offset = offsets.define(sizeof_uint8, 4)
 
@@ -78,6 +81,7 @@ logger.debug(f"  next_mission_index: {next_mission_index_offset}")
 logger.debug(f"  next_side_mission_index: {next_side_mission_index_offset}")
 logger.debug(f"  missions_checked: {missions_checked_offset}")
 logger.debug(f"  side_missions_checked: {side_missions_checked_offset}")
+logger.debug(f"  connection_status: {connection_status_offset}")
 logger.debug(f"  end_marker: {end_marker_offset}")
 logger.debug(f"  total_size: {offsets.current_offset}")
 
