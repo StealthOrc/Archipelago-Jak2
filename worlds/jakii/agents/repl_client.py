@@ -15,7 +15,7 @@ from asyncio import StreamReader, StreamWriter, Lock
 try:
     from NetUtils import NetworkItem
     from ..game_id import jak2_name
-    from ..items import key_item_table
+    from ..items import item_table, Jak2ItemData
     from ..locs.mission_locations import main_mission_table, side_mission_table
 except ImportError:
     # Fallback for direct execution or testing
@@ -30,7 +30,7 @@ except ImportError:
     
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
     from game_id import jak2_name
-    from items import key_item_table
+    from items import item_table, Jak2ItemData
     from locs.mission_locations import main_mission_table, side_mission_table
 
 
@@ -342,25 +342,33 @@ class Jak2ReplClient:
         """Send a specific item to the game via REPL commands."""
         try:
             # Look up the item data
-            if item.item not in key_item_table:
+            if item.item not in item_table:
                 print(f"⚠️  [REPL] Unknown item ID: {item.item}")
                 self.log_warn(logger, f"Unknown item ID: {item.item}")
                 return False
 
-            item_data = key_item_table[item.item]
-            item_symbol = item_data.symbol
+            item_entry = item_table[item.item]
+            
+            # All items are Jak2ItemData objects (both key items and filler items)
+            if isinstance(item_entry, Jak2ItemData):
+                item_symbol = item_entry.symbol
+            else:
+                # This should not happen anymore - all items should be Jak2ItemData objects
+                print(f"⚠️  [REPL] WARNING: Item is not a Jak2ItemData object: {item_entry}")
+                self.log_warn(logger, f"WARNING: Item is not a Jak2ItemData object: {item_entry}")
+                return False
             
             # Send the item to the game using the ap-item-received! function
             command = f"(ap-item-received! '{item_symbol})"
-            print(f"🎁 [REPL] Sending item '{item_data.name}' (symbol: {item_symbol}) to game...")
+            print(f"🎁 [REPL] Sending item '{item_entry.name}' (symbol: {item_symbol}) to game...")
             success = await self.send_form(command)
             
             if success:
-                print(f"✅ [REPL] Successfully gave item: {item_data.name}")
-                self.log_success(logger, f"Successfully gave item: {item_data.name}")
+                print(f"✅ [REPL] Successfully gave item: {item_entry.name}")
+                self.log_success(logger, f"Successfully gave item: {item_entry.name}")
             else:
-                print(f"❌ [REPL] Item delivery failed for: {item_data.name}")
-                self.log_warn(logger, f"Item delivery failed for: {item_data.name}")
+                print(f"❌ [REPL] Item delivery failed for: {item_entry.name}")
+                self.log_warn(logger, f"Item delivery failed for: {item_entry.name}")
             
             return success
                 
