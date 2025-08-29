@@ -20,6 +20,83 @@ except ImportError:
     from locs.mission_locations import main_mission_table, side_mission_table
 
 
+# Game-task enum to Archipelago mission ID mapping
+# GOAL sends game-task enum values starting from 6 (fortress-escape), 7 (protect-kor), etc.
+# Our mission table expects sequential IDs starting from 1
+# Based on main_mission_table structure: missions 1-65 for main story, side missions 1-33 offset by 100
+GAME_TASK_TO_MISSION_ID = {
+    # Main missions: game-task enums start at 6, map to mission IDs 1-65
+    6: 1,   # fortress-escape -> "Escape From Prison"
+    7: 2,   # protect-kor -> "Protect Kor and Kid"
+    8: 3,   # retrieve-banner -> "Retrieve Banner from Dead Town"
+    9: 4,   # find-pumping-station-valve -> "Find Pumping Station Valve"
+    10: 5,  # blow-up-ammo-fortress -> "Blow up Ammo at Fortress"
+    11: 6,  # hip-hog-delivery -> "Make delivery to Hip Hog Saloon"
+    12: 7,  # scatter-gun-course -> "Beat Scatter Gun Course"
+    13: 8,  # protect-sig-pumping -> "Protect Sig at Pumping Station"
+    14: 9,  # destroy-turrets-sewers -> "Destroy Turrets in Sewers"
+    15: 10, # rescue-vin-strip-mine -> "Rescue Vin at Strip Mine"
+    16: 11, # find-pumping-patrol -> "Find Pumping Station Patrol"
+    17: 12, # find-lens-mountain -> "Find Lens in Mountain Temple"
+    18: 13, # find-gear-mountain -> "Find Gear in Mountain Temple"
+    19: 14, # find-shard-mountain -> "Find Shard in Mountain Temple"
+    20: 15, # beat-time-race-garage -> "Beat Time to Race Garage"
+    21: 16, # win-jet-board-stadium -> "Win JET-Board Stadium Challenge"
+    22: 17, # collect-money-krew -> "Collect Money for Krew"
+    23: 18, # beat-blaster-gun-course -> "Beat Blaster Gun Course"
+    24: 19, # destroy-eggs-drill -> "Destroy Eggs at Drill Platform"
+    25: 20, # turn-on-power-switches -> "Turn on 5 Power Switches"
+    26: 21, # ride-elevator-palace -> "Ride Elevator up to Palace"
+    27: 22, # defeat-baron-palace -> "Defeat Baron at Palace"
+    28: 23, # shuttle-underground -> "Shuttle Underground Fighters"
+    29: 24, # protect-site-dead-town -> "Protect Site in Dead Town"
+    30: 25, # catch-scouts-forest -> "Catch Scouts in Haven Forest"
+    31: 26, # escort-kid-power -> "Escort Kid to Power Station"
+    32: 27, # destroy-equipment-dig -> "Destroy Equipment at Dig"
+    33: 28, # blow-up-eco-wells -> "Blow up Strip Mine Eco Wells"
+    34: 29, # destroy-ship-drill -> "Destroy Ship at Drill Platform"
+    35: 30, # destroy-cargo-port -> "Destroy Cargo in Port"
+    36: 31, # rescue-lurkers-brutter-1 -> "Rescue Lurkers for Brutter #1"
+    37: 32, # drain-sewers-statue -> "Drain Sewers to find Statue"
+    38: 33, # hunt-forest-metal-heads -> "Hunt Haven Forest Metal Heads"
+    39: 34, # intercept-tanker -> "Intercept Tanker"
+    40: 35, # win-class3-race -> "Win Class 3 Race at Stadium"
+    41: 36, # get-seal-water-slums -> "Get Seal Piece at Water Slums"
+    42: 37, # get-seal-dig -> "Get Seal Piece at Dig"
+    43: 38, # destroy-hellcat-cruisers -> "Destroy 5 HellCat Cruisers"
+    44: 39, # beat-onin-game -> "Beat Onin Game"
+    45: 40, # use-items-canyon -> "Use items in No Man's Canyon"
+    46: 41, # pass-first-test -> "Pass the first Test of Manhood"
+    47: 42, # pass-second-test -> "Pass the second Test of Manhood"
+    48: 43, # defeat-baron-tomb -> "Defeat Baron in Mar's Tomb"
+    49: 44, # rescue-friends-fortress -> "Rescue Friends in Fortress"
+    50: 45, # escort-men-sewers -> "Escort men through Sewers"
+    51: 46, # win-class2-race -> "Win Class 2 Race at Stadium"
+    52: 47, # protect-hideout-bombots -> "Protect Hideout from Bombots"
+    53: 48, # beat-erol-race -> "Beat Erol in Race Challenge"
+    54: 49, # destroy-eggs-mine -> "Destroy Eggs in Strip Mine"
+    55: 50, # get-life-seed -> "Get Life Seed in Dead Town"
+    56: 51, # protect-samos-forest -> "Protect Samos in Haven Forest"
+    57: 52, # destroy-drill-tower -> "Destroy Drill Platform Tower"
+    58: 53, # rescue-lurkers-brutter-2 -> "Rescue Lurkers for Brutter #2"
+    59: 54, # win-class1-race -> "Win Class 1 Race at Stadium"
+    60: 55, # explore-palace -> "Explore Palace"
+    61: 56, # get-heart-weapons-lab -> "Get Heart of Mar in Weapons Lab"
+    62: 57, # beat-krew-weapons-lab -> "Beat Krew in Weapons Lab"
+    63: 58, # beat-metal-head-mash -> "Beat the Metal Head Mash Game"
+    64: 59, # find-sig-under-port -> "Find Sig in Under Port"
+    65: 60, # escort-sig-under-port -> "Escort Sig in Under Port"
+    66: 61, # defend-stadium -> "Defend Stadium"
+    67: 62, # check-construction-site -> "Check the Construction Site"
+    68: 63, # break-barrier-nest -> "Break Barrier at Nest"
+    69: 64, # attack-metal-head-nest -> "Attack the Metal Head Nest"
+    70: 65, # destroy-metal-kor -> "Destroy Metal Kor at Nest"
+}
+
+# Side mission mapping (if needed) - side missions likely use different enum ranges
+# Will be implemented when we get more information about side mission enum values
+
+
 logger = logging.getLogger("Jak2MemoryReader")
 
 
@@ -104,6 +181,7 @@ class Jak2MemoryReader:
     marker_address: Optional[int] = None
     successful_marker: Optional[bytes] = None
     last_modules: list = None
+    realtime_monitoring = False
     
     # Test both marker variants
     markers_to_test = [
@@ -143,12 +221,15 @@ class Jak2MemoryReader:
 
     async def main_tick(self):
         if self.initiated_connect:
+            print("🔌 [MEMORY] Initiating connection to game...")
             await self.connect()
             self.initiated_connect = False
 
         if self.connected:
             try:
                 self.gk_process.read_bool(self.gk_process.base_address)  # Ping to see if it's alive.
+                # Uncomment for very verbose connection monitoring:
+                # print("✅ [MEMORY] Connection ping successful")
             except (ProcessError, MemoryReadError, WinAPIError):
                 msg = (f"Error reading game memory! (Did the game crash?)\n"
                        f"Please close all open windows and reopen the Jak II Client "
@@ -158,6 +239,7 @@ class Jak2MemoryReader:
                        f"   Then click Advanced > Play in Debug Mode.\n"
                        f"   Then click Advanced > Open REPL.\n"
                        f"   Then close and reopen the Jak II Client from the Archipelago Launcher.")
+                print(f"🔴 [MEMORY] CONNECTION LOST: {msg}")
                 self.log_error(logger, msg)
                 self.connected = False
         else:
@@ -165,21 +247,33 @@ class Jak2MemoryReader:
 
         if self.connected:
             # Read the memory address to check the state of the game.
-            self.read_memory()
+            try:
+                locations = self.read_memory()
+                if locations and len(locations) > 0:
+                    print(f"📍 [MEMORY] Found {len(locations)} completed locations")
+            except Exception as e:
+                print(f"🔴 [MEMORY] Error during memory read: {e}")
 
             # Handle completed missions
             if len(self.location_outbox) > self.outbox_index:
+                new_locations = self.location_outbox[self.outbox_index:]
+                print(f"🎯 [MEMORY] Reporting {len(new_locations)} new locations to client: {new_locations}")
                 self.inform_checked_location(self.location_outbox)
                 self.outbox_index += 1
 
             # Check for game completion (final boss defeated)
             if self.finished_game:
+                print("🏁 [MEMORY] Game completion detected - informing client!")
                 self.inform_finished_game()
 
     async def connect(self):
         """Connect to the game process with comprehensive debugging."""
+        print("🔍 [MEMORY] === STARTING MEMORY READER CONNECTION ===\n")
         if self.debug_enabled:
+            print("🐛 [MEMORY] Debug mode enabled - verbose output will be shown")
             self.log_info(logger, "=== Starting Memory Reader Connection with Debug Mode ===\n")
+        else:
+            print("ℹ️  [MEMORY] Debug mode disabled - use '/memr debug' to enable verbose output")
         
         # Step 1: Connect to process
         if not await self._connect_to_process():
@@ -198,9 +292,11 @@ class Jak2MemoryReader:
         
     async def _connect_to_process(self) -> bool:
         """Connect to the gk.exe process with detailed diagnostics."""
+        print("🎮 [MEMORY] Step 1: Connecting to gk.exe process...")
         try:
             self.gk_process = pymem.Pymem("gk.exe")  # The GOAL Kernel - same as Jak 1
             logger.debug("Found the gk process: " + str(self.gk_process.process_id))
+            print(f"✅ [MEMORY] Found gk.exe process - PID: {self.gk_process.process_id}")
             self.log_info(logger, f"Found the gk process: PID {self.gk_process.process_id}")
             
             if self.debug_enabled:
@@ -209,22 +305,28 @@ class Jak2MemoryReader:
             
             return True
         except ProcessNotFound:
+            print("❌ [MEMORY] Could not find gk.exe process!")
+            print("❌ [MEMORY] Please make sure Jak 2 is running.")
             self.log_error(logger, "Could not find the game process (gk.exe).")
             self.log_error(logger, "Please make sure the game is running.")
             self.connected = False
             return False
         except Exception as e:
+            print(f"🔴 [MEMORY] Unexpected error connecting to process: {e}")
             self.log_error(logger, f"Unexpected error connecting to process: {e}")
             if self.debug_enabled:
+                print(f"🐛 [MEMORY] Traceback: {traceback.format_exc()}")
                 self.log_error(logger, f"Traceback: {traceback.format_exc()}")
             self.connected = False
             return False
 
     async def _scan_modules_for_marker(self) -> bool:
         """Scan all process modules for the Archipelago marker."""
+        print("🔍 [MEMORY] Step 2: Scanning process modules for Archipelago marker...")
         try:
             modules = list(self.gk_process.list_modules())
             self.last_modules = modules  # Store for debug access
+            print(f"📦 [MEMORY] Found {len(modules)} loaded modules to scan")
             self.log_info(logger, f"Found {len(modules)} loaded modules")
             
             if self.debug_enabled:
@@ -254,6 +356,7 @@ class Jak2MemoryReader:
                         if marker_address:
                             self.marker_address = marker_address
                             self.successful_marker = marker_bytes
+                            print(f"🎯 [MEMORY] *** FOUND MARKER {marker_desc} in {module.name} at address 0x{marker_address:x} ***")
                             self.log_success(logger, f"*** FOUND MARKER {marker_desc} in {module.name} at address 0x{marker_address:x} ***")
                             return True
                         else:
@@ -265,6 +368,8 @@ class Jak2MemoryReader:
             # If no marker found, try partial patterns for diagnostics
             await self._scan_partial_markers(modules)
             
+            print("❌ [MEMORY] Could not find the Jak 2 Archipelago marker in any module!")
+            print("❌ [MEMORY] This usually means the ArchipelaGOAL mod is not loaded.")
             self.log_error(logger, "Could not find the Jak 2 Archipelago marker in any module!")
             self.connected = False
             return False
@@ -316,7 +421,9 @@ class Jak2MemoryReader:
         
     async def _analyze_marker_structure(self) -> bool:
         """Analyze the memory structure at the marker address to extract the GOAL pointer."""
+        print("🔬 [MEMORY] Step 3: Analyzing marker structure to find GOAL pointer...")
         if not self.marker_address:
+            print("❌ [MEMORY] Marker address not found!")
             self.log_error(logger, "Marker address not found!")
             return False
         
@@ -401,10 +508,14 @@ class Jak2MemoryReader:
                                     self.log_info(logger, f"Potential version field: {version}")
                                 
                                 if version == expected_memory_version:
+                                    print(f"✅ [MEMORY] *** FOUND CORRECT VERSION {version}! This is the right pointer! ***")
                                     self.log_success(logger, f"*** FOUND CORRECT VERSION! This is likely the right pointer! ***")
                                     self.goal_address = pointer_value
                                     
                                     # Log the successful configuration
+                                    print(f"🎯 [MEMORY] Found marker at: 0x{self.marker_address:x}")
+                                    print(f"🎯 [MEMORY] Pointer location: 0x{pointer_address:x} (marker + {marker_length_in_cpp} + {padding} padding)")
+                                    print(f"🎯 [MEMORY] Found the Jak 2 archipelago memory address: 0x{self.goal_address:x}")
                                     self.log_success(logger, f"Found marker at: 0x{self.marker_address:x}")
                                     self.log_success(logger, f"Pointer location: 0x{pointer_address:x} (marker + {marker_length_in_cpp} + {padding} padding)")
                                     self.log_success(logger, f"Found the Jak 2 archipelago memory address: 0x{self.goal_address:x}")
@@ -420,6 +531,8 @@ class Jak2MemoryReader:
                 elif self.debug_enabled:
                     self.log_info(logger, "Pointer would be outside the read block")
             
+            print("❌ [MEMORY] Could not find valid pointer to Archipelago structure")
+            print("❌ [MEMORY] This might indicate a memory structure version mismatch.")
             self.log_error(logger, "Could not find valid pointer to Archipelago structure")
             self.connected = False
             return False
@@ -432,7 +545,9 @@ class Jak2MemoryReader:
             return False
 
     async def verify_memory_version(self):
+        print("🔍 [MEMORY] Step 4: Verifying memory structure version...")
         if self.goal_address is None:
+            print("❌ [MEMORY] Could not find the Jak 2 Archipelago memory address!")
             self.log_error(logger, "Could not find the Jak 2 Archipelago memory address!")
             self.connected = False
             return
@@ -468,6 +583,8 @@ class Jak2MemoryReader:
             self.log_info(logger, f"Successfully read memory version: {memory_version}")
             
             if memory_version == expected_memory_version:
+                print(f"✅ [MEMORY] Version match! Expected: {expected_memory_version}, Found: {memory_version}")
+                print("🟢 [MEMORY] === THE JAK 2 MEMORY READER IS READY! ===\n")
                 self.log_success(logger, "The Jak 2 Memory Reader is ready!")
                 self.connected = True
                 
@@ -480,10 +597,13 @@ class Jak2MemoryReader:
                 except Exception as e:
                     self.log_warn(logger, f"Could not read mission indices (this may be normal): {e}")
             else:
+                print(f"❌ [MEMORY] Version mismatch! Expected {expected_memory_version}, got {memory_version}")
+                print("❌ [MEMORY] The ArchipelaGOAL mod version is incompatible with this client.")
                 self.log_error(logger, f"Version mismatch! Expected {expected_memory_version}, got {memory_version}")
                 self.connected = False
                 
         except (ProcessError, MemoryReadError, WinAPIError) as e:
+            print(f"🔴 [MEMORY] CRITICAL: Exception while reading memory version: {e}")
             self.log_error(logger, f"Exception while reading memory version: {e}")
             
             # Enhanced diagnostic information
@@ -541,6 +661,7 @@ class Jak2MemoryReader:
                        f"   2. Try entering '/memr connect' in the client.\n"
                        f"   3. If that doesn't work, restart the game and try again.\n"
                        f"   4. Check the game console for Archipelago initialization messages.")
+                print(f"🔴 [MEMORY] CRITICAL: {msg}")
             else:
                 msg = (f"The OpenGOAL memory structure is incompatible with the current Archipelago client!\n"
                        f"   Expected Version: {str(expected_memory_version)}\n"
@@ -551,6 +672,7 @@ class Jak2MemoryReader:
                        f"   Click Advanced > Compile. When this is done, click Continue.\n"
                        f"   Click Versions and verify the latest version is marked 'Active'.\n"
                        f"   Close all launchers, games, clients, and console windows, then restart Archipelago.")
+                print(f"🔴 [MEMORY] CRITICAL: {msg}")
             self.log_error(logger, msg)
             self.connected = False
 
@@ -707,39 +829,260 @@ class Jak2MemoryReader:
         """Disable debug mode."""
         self.debug_enabled = False
         self.log_info(logger, "Debug mode disabled")
+    
+    async def test_memory_connection(self):
+        """Test memory connection by reading structure version."""
+        print("🔍 [MEMORY] Testing memory connection...")
+        self.log_info(logger, "Testing memory connection")
+        
+        if not self.connected:
+            print("❌ [MEMORY] Not connected to game process - cannot test connection")
+            self.log_error(logger, "Not connected to game process - cannot test connection")
+            return
+        
+        try:
+            # Test basic process connection
+            self.gk_process.read_bool(self.gk_process.base_address)
+            print("✅ [MEMORY] Process connection test PASSED")
+            self.log_success(logger, "Process connection test PASSED")
+            
+            # Test memory structure access
+            if self.goal_address:
+                version = self.read_goal_address(memory_version_offset, sizeof_uint32)
+                print(f"✅ [MEMORY] Memory structure test PASSED - Version: {version}")
+                self.log_success(logger, f"Memory structure test PASSED - Version: {version}")
+                
+                # Test reading mission indices
+                next_mission_idx = self.read_goal_address(next_mission_index_offset, sizeof_uint64)
+                next_side_mission_idx = self.read_goal_address(next_side_mission_index_offset, sizeof_uint64)
+                print(f"✅ [MEMORY] Mission indices test PASSED - Main: {next_mission_idx}, Side: {next_side_mission_idx}")
+                self.log_success(logger, f"Mission indices test PASSED - Main: {next_mission_idx}, Side: {next_side_mission_idx}")
+            else:
+                print("❌ [MEMORY] Memory structure test FAILED - No goal address")
+                self.log_error(logger, "Memory structure test FAILED - No goal address")
+                
+        except Exception as e:
+            print(f"🔴 [MEMORY] Connection test ERROR: {e}")
+            self.log_error(logger, f"Connection test ERROR: {e}")
+    
+    async def force_memory_refresh(self):
+        """Force refresh memory read and check for new locations."""
+        print("🔄 [MEMORY] Forcing memory refresh...")
+        self.log_info(logger, "Forcing memory refresh")
+        
+        if not self.connected:
+            print("❌ [MEMORY] Not connected to game - cannot refresh memory")
+            self.log_error(logger, "Not connected to game - cannot refresh memory")
+            return
+        
+        try:
+            print(f"📊 [MEMORY] Current locations found: {len(self.location_outbox)}")
+            
+            # Force read memory
+            locations = self.read_memory()
+            
+            if locations:
+                new_locations_count = len(locations) - len(self.location_outbox)
+                if new_locations_count > 0:
+                    print(f"✨ [MEMORY] Found {new_locations_count} new locations!")
+                    self.log_success(logger, f"Found {new_locations_count} new locations")
+                else:
+                    print("ℹ️  [MEMORY] No new locations found")
+                    self.log_info(logger, "No new locations found")
+            
+            print(f"📊 [MEMORY] Total locations: {len(self.location_outbox)}")
+            print("✅ [MEMORY] Memory refresh complete")
+            self.log_success(logger, "Memory refresh complete")
+            
+        except Exception as e:
+            print(f"🔴 [MEMORY] Memory refresh ERROR: {e}")
+            self.log_error(logger, f"Memory refresh ERROR: {e}")
+    
+    async def display_mission_status(self):
+        """Show current mission completion status."""
+        print("🎯 [MEMORY] Displaying mission completion status...")
+        self.log_info(logger, "Displaying mission completion status")
+        
+        if not self.connected:
+            print("❌ [MEMORY] Not connected to game - cannot read mission status")
+            self.log_error(logger, "Not connected to game - cannot read mission status")
+            return
+        
+        try:
+            # Read mission indices
+            next_mission_idx = self.read_goal_address(next_mission_index_offset, sizeof_uint64)
+            next_side_mission_idx = self.read_goal_address(next_side_mission_index_offset, sizeof_uint64)
+            
+            print(f"🎯 [MEMORY] === MISSION STATUS ===")
+            print(f"🎯 [MEMORY] Main Missions Completed: {next_mission_idx}/70")
+            print(f"🎯 [MEMORY] Side Missions Completed: {next_side_mission_idx}/24")
+            print(f"🎯 [MEMORY] Total Locations Found: {len(self.location_outbox)}")
+            print(f"🎯 [MEMORY] Game Finished: {self.finished_game}")
+            
+            if next_mission_idx > 0:
+                print(f"🎯 [MEMORY] Completed main missions:")
+                for i in range(int(next_mission_idx)):
+                    raw_game_task_id = self.read_goal_address(missions_checked_offset + (i * sizeof_uint32), sizeof_uint32)
+                    if raw_game_task_id in GAME_TASK_TO_MISSION_ID:
+                        mission_id = GAME_TASK_TO_MISSION_ID[raw_game_task_id]
+                        if mission_id in main_mission_table:
+                            mission_name = main_mission_table[mission_id].name
+                            print(f"🎯 [MEMORY]   {mission_id:2d}. {mission_name} (game-task: {raw_game_task_id})")
+            
+            if next_side_mission_idx > 0:
+                print(f"🎯 [MEMORY] Completed side missions:")
+                for i in range(int(next_side_mission_idx)):
+                    side_mission_id = self.read_goal_address(side_missions_checked_offset + (i * sizeof_uint32), sizeof_uint32)
+                    if side_mission_id in side_mission_table:
+                        mission_name = side_mission_table[side_mission_id].name
+                        print(f"🎯 [MEMORY]   {side_mission_id:2d}. {mission_name}")
+            
+            print(f"🎯 [MEMORY] === END MISSION STATUS ===")
+            self.log_success(logger, "Mission status displayed successfully")
+            
+        except Exception as e:
+            print(f"🔴 [MEMORY] Display mission status ERROR: {e}")
+            self.log_error(logger, f"Display mission status ERROR: {e}")
+    
+    async def display_structure_info(self):
+        """Display memory structure layout and offsets."""
+        print("📋 [MEMORY] Displaying memory structure information...")
+        self.log_info(logger, "Displaying memory structure information")
+        
+        print(f"📋 [MEMORY] === MEMORY STRUCTURE INFO ===")
+        print(f"📋 [MEMORY] Expected version: {expected_memory_version}")
+        print(f"📋 [MEMORY] Structure base address: {hex(self.goal_address) if self.goal_address else 'None'}")
+        print(f"📋 [MEMORY] Marker address: {hex(self.marker_address) if self.marker_address else 'None'}")
+        successful_marker_str = repr(self.successful_marker) if self.successful_marker else 'None'
+        print(f"📋 [MEMORY] Successful marker: {successful_marker_str}")
+        
+        print(f"📋 [MEMORY] Structure offsets:")
+        print(f"📋 [MEMORY]   Version: {memory_version_offset} (0x{memory_version_offset:x})")
+        print(f"📋 [MEMORY]   Next mission index: {next_mission_index_offset} (0x{next_mission_index_offset:x})")
+        print(f"📋 [MEMORY]   Next side mission index: {next_side_mission_index_offset} (0x{next_side_mission_index_offset:x})")
+        print(f"📋 [MEMORY]   Missions array: {missions_checked_offset} (0x{missions_checked_offset:x})")
+        print(f"📋 [MEMORY]   Side missions array: {side_missions_checked_offset} (0x{side_missions_checked_offset:x})")
+        print(f"📋 [MEMORY]   Connection status: {connection_status_offset} (0x{connection_status_offset:x})")
+        print(f"📋 [MEMORY]   End marker: {end_marker_offset} (0x{end_marker_offset:x})")
+        print(f"📋 [MEMORY]   Total structure size: {offsets.current_offset} bytes")
+        
+        if self.connected and self.goal_address:
+            try:
+                version = self.read_goal_address(memory_version_offset, sizeof_uint32)
+                print(f"📋 [MEMORY] Current version in memory: {version}")
+                
+                # Try to read connection status
+                try:
+                    connection_status = self.read_goal_address(connection_status_offset, sizeof_uint32)
+                    status_names = {0: "disconnected", 1: "wait", 2: "ready", 3: "failure"}
+                    status_name = status_names.get(connection_status, f"unknown({connection_status})")
+                    print(f"📋 [MEMORY] Connection status: {connection_status} ({status_name})")
+                except:
+                    print(f"📋 [MEMORY] Connection status: Could not read")
+                    
+            except Exception as e:
+                print(f"📋 [MEMORY] Could not read current values: {e}")
+        
+        print(f"📋 [MEMORY] === END STRUCTURE INFO ===")
+        self.log_success(logger, "Structure info displayed successfully")
+    
+    def toggle_realtime_monitoring(self):
+        """Toggle real-time monitoring of memory values."""
+        self.realtime_monitoring = not self.realtime_monitoring
+        
+        if self.realtime_monitoring:
+            print("📡 [MEMORY] Real-time monitoring ENABLED - memory values will be displayed continuously")
+            self.log_success(logger, "Real-time monitoring enabled")
+        else:
+            print("🚫 [MEMORY] Real-time monitoring DISABLED")
+            self.log_info(logger, "Real-time monitoring disabled")
 
     def read_memory(self) -> list[int]:
         try:
             # Read mission completion indices
             next_mission_idx = self.read_goal_address(next_mission_index_offset, sizeof_uint64)
             next_side_mission_idx = self.read_goal_address(next_side_mission_index_offset, sizeof_uint64)
+            
+            if self.debug_enabled or self.realtime_monitoring or (next_mission_idx > 0 or next_side_mission_idx > 0):
+                print(f"📊 [MEMORY] Mission indices - Main: {next_mission_idx}, Side: {next_side_mission_idx}")
+
+            logger.debug(f"Memory read: next_mission_idx={next_mission_idx}, next_side_mission_idx={next_side_mission_idx}")
 
             # Read completed main missions
             for i in range(int(next_mission_idx)):
-                mission_id = self.read_goal_address(missions_checked_offset + (i * sizeof_uint32), sizeof_uint32)
-                if mission_id not in self.location_outbox:
-                    # Convert mission ID to location ID based on our tables
-                    if mission_id in main_mission_table:
-                        location_id = mission_id  # Mission ID directly maps to location ID
-                        self.location_outbox.append(location_id)
-                        logger.debug(f"Main mission {mission_id} completed: {main_mission_table[mission_id].name}")
+                raw_game_task_id = self.read_goal_address(missions_checked_offset + (i * sizeof_uint32), sizeof_uint32)
+                
+                logger.debug(f"Raw mission array[{i}]: game-task enum = {raw_game_task_id}")
+                
+                if raw_game_task_id not in self.location_outbox:
+                    # Translate game-task enum to Archipelago mission ID
+                    if raw_game_task_id in GAME_TASK_TO_MISSION_ID:
+                        mission_id = GAME_TASK_TO_MISSION_ID[raw_game_task_id]
+                        
+                        # Verify mission exists in our table
+                        if mission_id in main_mission_table:
+                            location_id = mission_id  # Mission ID directly maps to location ID
+                            self.location_outbox.append(location_id)
+                            
+                            mission_name = main_mission_table[mission_id].name
+                            print(f"🏆 [MEMORY] MISSION COMPLETED! '{mission_name}' (game-task: {raw_game_task_id} -> mission: {mission_id})")
+                            logger.info(f"Mission completed! Raw game-task: {raw_game_task_id} -> Mission ID: {mission_id} -> '{mission_name}'")
+                            
+                            if self.debug_enabled:
+                                self.log_info(logger, f"[DEBUG] Completed mission translation:")
+                                self.log_info(logger, f"  Raw game-task enum: {raw_game_task_id}")
+                                self.log_info(logger, f"  Translated mission ID: {mission_id}")
+                                self.log_info(logger, f"  Mission name: {mission_name}")
+                                self.log_info(logger, f"  Location ID added: {location_id}")
+                        else:
+                            logger.warning(f"Translated mission ID {mission_id} not found in main_mission_table")
+                    else:
+                        logger.warning(f"Unknown game-task enum value: {raw_game_task_id} (not in mapping table)")
+                        if self.debug_enabled:
+                            self.log_warn(logger, f"[DEBUG] Unmapped game-task enum {raw_game_task_id} received from game")
+                else:
+                    logger.debug(f"Mission {raw_game_task_id} already processed")
 
             # Read completed side missions  
             for i in range(int(next_side_mission_idx)):
-                side_mission_id = self.read_goal_address(side_missions_checked_offset + (i * sizeof_uint32), sizeof_uint32)
-                if side_mission_id not in self.location_outbox:
-                    # Convert side mission ID to location ID based on our tables
-                    if side_mission_id in side_mission_table:
-                        location_id = side_mission_id + 100  # Offset matches locations.py
+                raw_side_mission_id = self.read_goal_address(side_missions_checked_offset + (i * sizeof_uint32), sizeof_uint32)
+                
+                logger.debug(f"Raw side mission array[{i}]: ID = {raw_side_mission_id}")
+                
+                if raw_side_mission_id not in self.location_outbox:
+                    # For now, assume side missions use direct IDs (no translation needed)
+                    # TODO: Implement side mission enum translation if needed
+                    if raw_side_mission_id in side_mission_table:
+                        location_id = raw_side_mission_id + 100  # Offset matches locations.py
                         self.location_outbox.append(location_id)
-                        logger.debug(f"Side mission {side_mission_id} completed: {side_mission_table[side_mission_id].name}")
+                        
+                        side_mission_name = side_mission_table[raw_side_mission_id].name
+                        print(f"🏅 [MEMORY] SIDE MISSION COMPLETED! '{side_mission_name}' (ID: {raw_side_mission_id} -> location: {location_id})")
+                        logger.info(f"Side mission completed! ID: {raw_side_mission_id} -> '{side_mission_name}' (location: {location_id})")
+                        
+                        if self.debug_enabled:
+                            self.log_info(logger, f"[DEBUG] Side mission completed:")
+                            self.log_info(logger, f"  Side mission ID: {raw_side_mission_id}")
+                            self.log_info(logger, f"  Side mission name: {side_mission_name}")
+                            self.log_info(logger, f"  Location ID added: {location_id}")
+                    else:
+                        logger.warning(f"Unknown side mission ID: {raw_side_mission_id}")
 
             # Check if final boss is defeated (mission 65 - "Destroy Metal Kor at Nest")
-            if 65 in [mission_id for i in range(int(next_mission_idx)) 
-                     for mission_id in [self.read_goal_address(missions_checked_offset + (i * sizeof_uint32), sizeof_uint32)]]:
-                self.finished_game = True
+            # Look for the raw game-task enum 70 which maps to mission 65
+            completed_raw_missions = [self.read_goal_address(missions_checked_offset + (i * sizeof_uint32), sizeof_uint32) 
+                                    for i in range(int(next_mission_idx))]
+            
+            if 70 in completed_raw_missions:  # game-task enum 70 = mission 65 "Destroy Metal Kor at Nest"
+                if not self.finished_game:  # Only print once
+                    self.finished_game = True
+                    print("🏁 [MEMORY] === GAME COMPLETED! FINAL BOSS DEFEATED! ===")
+                    logger.info("Game completed! Final boss defeated (game-task enum 70 -> mission 65)")
+                    if self.debug_enabled:
+                        self.log_success(logger, "[DEBUG] Final boss defeated - game completion detected!")
 
         except (ProcessError, MemoryReadError, WinAPIError) as e:
+            print(f"⚠️  [MEMORY] Memory read error during location scanning: {e}")
             if self.debug_enabled:
                 self.log_warn(logger, f"Memory read error during location scanning: {e}")
             else:
@@ -751,6 +1094,8 @@ class Jak2MemoryReader:
     def read_goal_address(self, offset: int, size: int) -> int:
         """Helper function to read from the GOAL memory structure at the given offset."""
         try:
+            if self.debug_enabled or self.realtime_monitoring:
+                print(f"🔍 [MEMORY] Reading {size} bytes at offset {offset} from 0x{self.goal_address + offset:x}")
             read_bytes = self.gk_process.read_bytes(self.goal_address + offset, size)
             if size == sizeof_uint64:
                 return struct.unpack("<Q", read_bytes)[0]  # Little-endian uint64
@@ -761,6 +1106,7 @@ class Jak2MemoryReader:
             else:
                 raise ValueError(f"Unsupported size for reading: {size}")
         except (ProcessError, MemoryReadError, WinAPIError) as e:
+            print(f"🔴 [MEMORY] Failed to read {size} bytes at offset {offset} from 0x{self.goal_address + offset:x}: {e}")
             if self.debug_enabled:
                 logger.debug(f"Failed to read {size} bytes at offset {offset} from 0x{self.goal_address + offset:x}: {e}")
             else:

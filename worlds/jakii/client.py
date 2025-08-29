@@ -55,13 +55,33 @@ class Jak2ClientCommandProcessor(ClientCommandProcessor):
     def _cmd_repl(self, *arguments: str):
         """Sends a command to the OpenGOAL REPL. Arguments:
         - connect : connect the client to the REPL (goalc).
-        - status : check internal status of the REPL."""
+        - status : check internal status of the REPL.
+        - test : test REPL connection by sending a simple command.
+        - debug : enable debug mode for REPL communication.
+        - debugoff : disable debug mode for REPL communication.
+        - send <command> : send a raw GOAL command to the REPL.
+        - refresh : force refresh of items to be sent to game."""
         if arguments:
             if arguments[0] == "connect":
                 self.ctx.on_log_info(logger, "This may take a bit... Wait for the success audio cue before continuing!")
                 self.ctx.repl.initiated_connect = True
-            if arguments[0] == "status":
+            elif arguments[0] == "status":
                 create_task_log_exception(self.ctx.repl.print_status())
+            elif arguments[0] == "test":
+                create_task_log_exception(self.ctx.repl.test_connection())
+            elif arguments[0] == "debug":
+                self.ctx.repl.enable_debug_mode()
+                self.ctx.on_log_success(logger, "REPL debug mode enabled")
+            elif arguments[0] == "debugoff":
+                self.ctx.repl.disable_debug_mode()
+                self.ctx.on_log_info(logger, "REPL debug mode disabled")
+            elif arguments[0] == "send" and len(arguments) > 1:
+                command = " ".join(arguments[1:])
+                create_task_log_exception(self.ctx.repl.debug_send_command(command))
+            elif arguments[0] == "refresh":
+                create_task_log_exception(self.ctx.repl.force_item_refresh())
+            else:
+                self.ctx.on_log_warn(logger, f"Unknown REPL command: {arguments[0]}")
 
     def _cmd_memr(self, *arguments: str):
         """Sends a command to the Memory Reader. Arguments:
@@ -69,7 +89,12 @@ class Jak2ClientCommandProcessor(ClientCommandProcessor):
         - status : check the internal status of the Memory Reader.
         - debug : enable debug mode and show comprehensive diagnostics.
         - debugoff : disable debug mode.
-        - analyze : run comprehensive debug analysis (implies debug mode)."""
+        - analyze : run comprehensive debug analysis (implies debug mode).
+        - test : test memory connection by reading structure version.
+        - refresh : force refresh memory read and check for new locations.
+        - missions : show current mission completion status.
+        - structure : display memory structure layout and offsets.
+        - monitor : start real-time monitoring of memory values (toggle on/off)."""
         if arguments:
             if arguments[0] == "connect":
                 self.ctx.memr.initiated_connect = True
@@ -84,6 +109,47 @@ class Jak2ClientCommandProcessor(ClientCommandProcessor):
             elif arguments[0] == "analyze":
                 self.ctx.memr.enable_debug_mode()
                 create_task_log_exception(self.ctx.memr.print_debug_info())
+            elif arguments[0] == "test":
+                create_task_log_exception(self.ctx.memr.test_memory_connection())
+            elif arguments[0] == "refresh":
+                create_task_log_exception(self.ctx.memr.force_memory_refresh())
+            elif arguments[0] == "missions":
+                create_task_log_exception(self.ctx.memr.display_mission_status())
+            elif arguments[0] == "structure":
+                create_task_log_exception(self.ctx.memr.display_structure_info())
+            elif arguments[0] == "monitor":
+                self.ctx.memr.toggle_realtime_monitoring()
+            else:
+                self.ctx.on_log_warn(logger, f"Unknown memory reader command: {arguments[0]}")
+
+    def _cmd_debug(self, *arguments: str):
+        """Global debug commands. Arguments:
+        - status : show status of all systems (REPL, Memory Reader, connections).
+        - on : enable debug mode for all systems.
+        - off : disable debug mode for all systems.
+        - test : run comprehensive connection tests for all systems.
+        - info : display detailed information about current game state."""
+        if not arguments:
+            # Default: show overall debug status
+            create_task_log_exception(self.ctx.show_debug_status())
+            return
+
+        if arguments[0] == "status":
+            create_task_log_exception(self.ctx.show_debug_status())
+        elif arguments[0] == "on":
+            self.ctx.repl.enable_debug_mode()
+            self.ctx.memr.enable_debug_mode()
+            self.ctx.on_log_success(logger, "Global debug mode enabled for all systems")
+        elif arguments[0] == "off":
+            self.ctx.repl.disable_debug_mode()
+            self.ctx.memr.disable_debug_mode()
+            self.ctx.on_log_info(logger, "Global debug mode disabled for all systems")
+        elif arguments[0] == "test":
+            create_task_log_exception(self.ctx.run_comprehensive_tests())
+        elif arguments[0] == "info":
+            create_task_log_exception(self.ctx.show_game_state_info())
+        else:
+            self.ctx.on_log_warn(logger, f"Unknown debug command: {arguments[0]}")
 
 
 class Jak2Context(CommonContext):
@@ -105,16 +171,23 @@ class Jak2Context(CommonContext):
     slot_seed: str
 
     def __init__(self, server_address: str | None, password: str | None) -> None:
+        print("🚀 [CLIENT] === JAK 2 ARCHIPELAGO CLIENT INITIALIZING ===\n")
+        print("📝 [CLIENT] Setting up REPL client (for sending items to game)...")
         self.repl = Jak2ReplClient(self.on_log_error,
                                    self.on_log_warn,
                                    self.on_log_success,
                                    self.on_log_info)
+        print("✅ [CLIENT] REPL client initialized")
+        
+        print("📝 [CLIENT] Setting up Memory Reader (for reading game progress)...")
         self.memr = Jak2MemoryReader(self.on_location_check,
                                      self.on_finish_check,
                                      self.on_log_error,
                                      self.on_log_warn,
                                      self.on_log_success,
                                      self.on_log_info)
+        print("✅ [CLIENT] Memory Reader initialized")
+        print("🟢 [CLIENT] === JAK 2 ARCHIPELAGO CLIENT READY ===\n")
         super().__init__(server_address, password)
 
     def run_gui(self):
@@ -202,6 +275,8 @@ class Jak2Context(CommonContext):
         super(Jak2Context, self).on_print_json(args)
 
     def on_location_check(self, location_ids: list[int]):
+        if location_ids:
+            print(f"📍 [CLIENT] Checking {len(location_ids)} locations with server: {location_ids}")
         create_task_log_exception(self.check_locations(location_ids))
 
     async def ap_inform_finished_game(self):
@@ -212,6 +287,7 @@ class Jak2Context(CommonContext):
             self.finished_game = True
 
     def on_finish_check(self):
+        print("🏆 [CLIENT] Game completion detected - notifying server!")
         create_task_log_exception(self.ap_inform_finished_game())
 
     def _markup_panels(self, msg: str, c: str = None):
@@ -242,14 +318,94 @@ class Jak2Context(CommonContext):
             self._markup_panels(message)
 
     async def run_repl_loop(self):
+        print("🔄 [CLIENT] Starting REPL communication loop...")
         while True:
             await self.repl.main_tick()
             await asyncio.sleep(0.1)
 
     async def run_memr_loop(self):
+        print("🔄 [CLIENT] Starting Memory Reader loop...")
         while True:
             await self.memr.main_tick()
             await asyncio.sleep(0.1)
+    
+    async def show_debug_status(self):
+        """Show comprehensive debug status for all systems."""
+        self.on_log_info(logger, "=== COMPREHENSIVE DEBUG STATUS ===")
+        
+        # REPL Status
+        self.on_log_info(logger, "\nREPL Client:")
+        self.on_log_info(logger, f"  Connected: {self.repl.connected}")
+        self.on_log_info(logger, f"  Debug Mode: {getattr(self.repl, 'debug_enabled', False)}")
+        self.on_log_info(logger, f"  Address: {self.repl.ip}:{self.repl.port}")
+        self.on_log_info(logger, f"  Items Processed: {self.repl.inbox_index}")
+        self.on_log_info(logger, f"  Items Pending: {len(self.repl.item_inbox) - self.repl.inbox_index}")
+        
+        # Memory Reader Status
+        self.on_log_info(logger, "\nMemory Reader:")
+        self.on_log_info(logger, f"  Connected: {self.memr.connected}")
+        self.on_log_info(logger, f"  Debug Mode: {self.memr.debug_enabled}")
+        proc_id = str(self.memr.gk_process.process_id) if self.memr.gk_process else "None"
+        self.on_log_info(logger, f"  Game Process ID: {proc_id}")
+        self.on_log_info(logger, f"  Goal Address: {hex(self.memr.goal_address) if self.memr.goal_address else 'None'}")
+        self.on_log_info(logger, f"  Locations Found: {len(self.memr.location_outbox)}")
+        self.on_log_info(logger, f"  Game Finished: {self.memr.finished_game}")
+        
+        # Overall Status
+        self.on_log_info(logger, "\nOverall Status:")
+        self.on_log_info(logger, f"  Server Connected: {self.server and self.server.socket.connected if hasattr(self, 'server') and self.server else False}")
+        self.on_log_info(logger, f"  Slot Name: {getattr(self, 'auth', 'Not Connected')}")
+        self.on_log_info(logger, f"  Seed Name: {getattr(self, 'slot_seed', 'Unknown')}")
+        
+        self.on_log_info(logger, "=" * 40)
+    
+    async def run_comprehensive_tests(self):
+        """Run comprehensive tests for all systems."""
+        self.on_log_info(logger, "\n=== RUNNING COMPREHENSIVE TESTS ===")
+        
+        # Test REPL connection
+        self.on_log_info(logger, "\n1. Testing REPL Connection...")
+        await self.repl.test_connection()
+        
+        # Test Memory Reader connection
+        self.on_log_info(logger, "\n2. Testing Memory Reader Connection...")
+        await self.memr.test_memory_connection()
+        
+        # Test Memory Structure
+        self.on_log_info(logger, "\n3. Testing Memory Structure...")
+        await self.memr.display_structure_info()
+        
+        # Test Mission Status
+        self.on_log_info(logger, "\n4. Testing Mission Status...")
+        await self.memr.display_mission_status()
+        
+        self.on_log_info(logger, "\n=== COMPREHENSIVE TESTS COMPLETE ===")
+    
+    async def show_game_state_info(self):
+        """Display detailed information about the current game state."""
+        self.on_log_info(logger, "\n=== CURRENT GAME STATE INFO ===")
+        
+        if not self.memr.connected:
+            self.on_log_warn(logger, "Memory Reader not connected - cannot read game state")
+            return
+        
+        try:
+            # Read current game state
+            await self.memr.force_memory_refresh()
+            
+            # Show mission progress
+            await self.memr.display_mission_status()
+            
+            # Show item status
+            self.on_log_info(logger, f"\nItem Status:")
+            self.on_log_info(logger, f"  Items in inbox: {len(self.repl.item_inbox)}")
+            self.on_log_info(logger, f"  Items processed: {self.repl.inbox_index}")
+            self.on_log_info(logger, f"  Items pending: {len(self.repl.item_inbox) - self.repl.inbox_index}")
+            
+            self.on_log_info(logger, "\n=== GAME STATE INFO COMPLETE ===")
+            
+        except Exception as e:
+            self.on_log_error(logger, f"Error reading game state: {e}")
 
 
 def find_root_directory(ctx: Jak2Context):
@@ -446,20 +602,44 @@ async def run_game(ctx: Jak2Context):
 
 
 async def main():
+    print("🚀 [MAIN] === STARTING JAK 2 ARCHIPELAGO CLIENT ===\n")
     Utils.init_logging("Jak2Client", exception_logger="Client")
+    print("📝 [MAIN] Logging initialized")
 
+    print("📝 [MAIN] Creating Jak2 context...")
     ctx = Jak2Context(None, None)
+    
+    print("📝 [MAIN] Starting server connection task...")
     ctx.server_task = asyncio.create_task(server_loop(ctx), name="server loop")
+    
+    print("📝 [MAIN] Starting REPL and Memory Reader tasks...")
     ctx.repl_task = create_task_log_exception(ctx.run_repl_loop())
     ctx.memr_task = create_task_log_exception(ctx.run_memr_loop())
 
     if gui_enabled:
+        print("🖥️  [MAIN] Starting GUI...")
         ctx.run_gui()
+    else:
+        print("💻 [MAIN] Running in CLI mode (no GUI)")
+    
+    print("💻 [MAIN] Starting CLI interface...")
     ctx.run_cli()
 
     # Find and run the game and compiler
+    print("🎮 [MAIN] Attempting to start game and compiler...")
     create_task_log_exception(run_game(ctx))
+    
+    print("✅ [MAIN] Client is now running! Available debug commands:")
+    print("ℹ️  [MAIN] Use '/debug' for overall status and '/debug test' for comprehensive tests")
+    print("ℹ️  [MAIN] Use '/memr connect' and '/repl connect' to connect to game")
+    print("ℹ️  [MAIN] Use '/memr debug' and '/repl debug' to enable verbose output")
+    print("ℹ️  [MAIN] Use '/memr missions' to see mission completion status")
+    print("ℹ️  [MAIN] Use '/memr monitor' to toggle real-time memory monitoring")
+    print("\n" + "=" * 60)
+    
     await ctx.exit_event.wait()
+    
+    print("🛑 [MAIN] Shutting down Jak 2 client...")
     await ctx.shutdown()
 
 
